@@ -35,6 +35,21 @@ And it should print test results. See [Example](#8-example) section.
 ### Linux users
 Same as Windows, but you have to change in file **.testrunner.json** "proj1.exe" to "./proj1". See [TestRunner settings](#42-testrunner-settings) section.
 
+### School server
+If you want to test it on Merlin or Eva servers, just connect to your desired server and write:
+
+```
+git clone https://github.com/brucknert/testrunner.git
+cd testrunner/example
+make
+nano .testrunner.json
+```
+
+Now change the executable from "proj1.exe" tp "./proj1" and save it by pressing ctrl+o. Then confirm name with enter, then exit nano with ctrl+x.
+
+Now you can run:
+
+`node test_runner.js`  
 
 ## 4 Folder structure
 This chapter describes mandatory folder structure.
