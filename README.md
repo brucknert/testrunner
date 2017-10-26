@@ -1,7 +1,7 @@
 # TestRunner documentation
 
 ## 1 TLDR version
-It tests your project. Check [Example](#8-example) section.
+It tests your project. Check [Get started](#3-get-started) section.
 
 ## 2 Why should you use it
 Usually, when people start writing code, they test their code manually.
