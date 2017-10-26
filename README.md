@@ -16,30 +16,40 @@ Advantage of this solution is that it is cross-platform (works on Windows, Linux
 ## 3 Get started
 You need to install Node.js (it is already installed on servers Eva and Merlin if you are FIT BUT student).
 You can install it from [here](https://nodejs.org/en/download). Doesn't matter if you install LTS (stable) version or current (latest), but make sure it is added to PATH.
+
 You can check that everything was install correctly by writing to your terminal:
 
 `node --version`
 
 And it should print out your installed version of NodeJS.
 
-Now copy file **test_runner.js** and **.testrunner.json** to the same folder where is your binary/script that you want to test.
+Now copy **Example** folder to your computer. 
 
-Create folder tests and run
+### Windows users
+Compile the proj1.c so that proj1.exe is in the same folder. You can use added Makefile or compile it with some IDE (CodeBlocks) and copy the binary compiled file to the Example folder. Now run in terminal:
 
 `node test_runner.js`
 
+And it should print test results. See [Example](#8-example) section. 
+
+### Linux users
+Same as Windows, but you have to change in file **.testrunner.json** "proj1.exe" to "./proj1". See [TestRunner settings](#42-testrunner-settings) section.
+
+
 ## 4 Folder structure
+This chapter describes mandatory folder structure.
 
 ### 4.1 Root folder
 ```
 .   -- tests    -- 01
                 -- 02
                 -- 03 (you can add as many folders in tests folder as you want)
-    -- proj1.exe
+    -- proj1.exe (or your binary/script)
+    -- test_runner.js
     -- .testrunner.json
 ```
 
-### 4.2 Testrunner settings
+### 4.2 TestRunner settings
 You can configure settings for TestRunner in file **.testrunner.json**. Currently it contains one option **executable**. 
 It is a command that will be run in command line. Example for the Windows users:
 
@@ -165,12 +175,15 @@ Expected:
 ```
 
 where
-* \<errormessage\> is description what went wrong (stdou, stderr or errorcode)
+* \<errormessage\> is description what went wrong (stdout, stderr or errorcode)
 * \<output\> value that the program returned
 * \<expected\> value that was expected
 
 ## 8 Example
 Copy **example** folder from github and run *make* command in terminal in the folder with *Makefile* file.
+
+If you are working on Linux, change executable to `./proj1` in **.testrunner.json**, see [TestRunner settings](#42-testrunner-settings) section.
+
 Run in terminal:
 
 `node test_runner.js`
