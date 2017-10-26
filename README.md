@@ -1,30 +1,46 @@
-# Testrunner documentation
+# TestRunner documentation
 
-## Why should you use it
+## 1 TLDR version
+It tests your project. Check [Example](#example) section.
 
-## Get started
-You need to install Node.js (it is already installed on servers Eva and Merlin).
+## 2 Why should you use it
+Usually, when people start writing code, they test their code manually.
+This results in not running all the tests everytime we change our code.
+That results  in code that is not probably tested.
+This coding style is called "Edit and Pray".
+
+TestRunner project tries to prevent this. It makes testing easy! You just create folder in *tests* folder, specify input and expected output, and TestRunner does the rest for you.
+Hope this project helps you developing your school project or maybe some home project more easily.
+Advantage of this solution is that it is cross-platform (works on Windows, Linux, Unix, ...) and it is really easy to setup.
+
+## 3 Get started
+You need to install Node.js (it is already installed on servers Eva and Merlin if you are FIT BUT student).
 You can install it from [here](https://nodejs.org/en/download). Doesn't matter if you install LTS (stable) version or current (latest), but make sure it is added to PATH.
-You can that everything was install correctly by writing to your terminal
+You can check that everything was install correctly by writing to your terminal:
 
 `node --version`
 
-Copy file **test_runner.js** and **.testrunner.json** to the same folder where is your binary/script that you want to test.
+And it should print out your installed version of NodeJS.
 
-Create folder tests and 
+Now copy file **test_runner.js** and **.testrunner.json** to the same folder where is your binary/script that you want to test.
+
+Create folder tests and run
+
 `node test_runner.js`
 
-## Folder structure
+## 4 Folder structure
 
-### Root folder
+### 4.1 Root folder
+```
 .   -- tests    -- 01
                 -- 02
-                -- 03
+                -- 03 (you can add as many folders in tests folder as you want)
     -- proj1.exe
     -- .testrunner.json
+```
 
-### Testrunner settings
-You can configure settings for testrunner in file **.testrunner.json**. Currently it contains one option **executable**. 
+### 4.2 Testrunner settings
+You can configure settings for TestRunner in file **.testrunner.json**. Currently it contains one option **executable**. 
 It is a command that will be run in command line. Example for the Windows users:
 
 ```javascript
@@ -56,16 +72,20 @@ You can list them using
 `ls -a`
 
 
-### Content of the test case folder
+### 4.3 Content of the test case folder
+Each test case folder can contain these files (example test case folder 01):
 
+```
 01  -- argv.txt
     -- stdin.txt
     -- stdout.txt
     -- stderr.txt
     -- return_code.txt
+```
 
+Every file is optional in test case folder. So if you don't want to use program arguments (argv) you don't have to. Same with stdin. If the test should not print anything to the stderr stream, you don't have to have stderr.txt etc.
 
-#### Program arguments
+#### 4.3.1 Program arguments
 If you want to specify program arguments (argv), save them into **argv** or **argv.txt**.
 For example if you have argv.txt file with content: 
 
@@ -73,26 +93,26 @@ For example if you have argv.txt file with content:
 
 And run the test_runner.js, it will run as:
 
-`./m arg1 arg2 arg3`
+`proj1.exe arg1 arg2 arg3`
 
 If the file is missing, no arguments are specified when running the binary/script.
 
 
-#### (optional) Program standard input (stdin)
+#### 4.3.2 Program standard input (stdin)
 If you want to specify stdin for your program, save it into **stdin** or **stdin.txt** file in your testcase.
 If the file is missing, nothing will be redirected to stdin.
 
-#### (optional) Program standard output (stdout)
+#### 4.3.3 Program standard output (stdout)
 If you want to specify expected stdout of the program, save it into **stdout** or **stdout.txt** file in your testcase. If program output differs from output inside stdout.txt file, then the test case is not successful.
-If the file is missing, testrunner checks if tested program does not output anything. If the program output anything even though the stdout.txt file is missing, then the test case is not successful.
+If the file is missing, TestRunner checks if tested program does not output anything. If the program output anything even though the stdout.txt file is missing, then the test case is not successful.
 
-#### Program standard error (stderr)
+#### 4.3.4 Program standard error (stderr)
 Same as stdout but uses **stderr** or **stderr.txt** file and compares it with program's stderr output.
 
-#### Program return code
-If you want to check return code, specify the value in **error\_code** or **error\_code.txt** file. Empty file defaults to return code 0.
+#### 4.3.5 Program return code
+If you want to check return code, specify the value in **return\_code** or **return\_code.txt** file. Empty file defaults to return code 0.
 
-### How to run only specific test cases
+## 5 How to run only specific test cases
 If you want to run only some specific test cases, use argument **--run**.
 Each test case should be seperated by space (see example).
 
@@ -106,7 +126,7 @@ You can also use **-r** instead of **--run**
 `node test_runner.js -r 01 03`
 
 
-### How to skip certain test cases
+## 6 How to skip certain test cases
 If you want to skip some test cases, use argument **--skip**.
 Each test case should be seperated by space (see example).
 
@@ -120,3 +140,57 @@ This example will run all test cases (folders in *tests* folder) except 01 and 0
 
 You can also use **-s** instead of **--skip**
 `node test_runner.js -s 01 03`
+
+## 7 Test output
+If the test executed successfully, TestRunner prints message in format:
+
+```
+<testcase>:<command>: Success! :)
+```
+
+where
+* \<testcase\> is folder of the test performed
+* \<command\> is the command that was executed
+
+
+If test case fails, TestRunner prints message in format:
+
+```
+<testcase>:<command>: Failed! :(
+<errormessage>
+Output:
+<output>
+Expected:
+<expected>
+```
+
+where
+* \<errormessage\> is description what went wrong (stdou, stderr or errorcode)
+* \<output\> value that the program returned
+* \<expected\> value that was expected
+
+## 8 Example
+Copy **example** folder from github and run *make* command in terminal in the folder with *Makefile* file.
+Run in terminal:
+
+`node test_runner.js`
+
+And see the results of the test cases. There are 3 test cases:
+
+* 01 - uses one program argument and checks if the program prints the argument to the stdout
+* 02 - uses two program arguments and checks if the program returned an error code 1 and prints error tothe stderr
+* 03 - uses stdin and checks if the program prints first letter of the stdin to the stdout
+
+It should output:
+
+```
+$ node test_runner.js
+01: proj1.exe arg1: Success! :)
+02: proj1.exe arg1 arg2: Success! :)
+03: proj1.exe < tests\03\stdin.txt: Success! :)
+All tests have been performed. No error!
+````
+
+You can check the proj1 source code in **proj1.c** file.
+
+Have fun testing and programming!

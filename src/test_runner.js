@@ -37,16 +37,29 @@ function printHelp() {
 }
 
 /**
+ * Filters out test cases (folder names) that should not be executed.
  * 
- * @param {number[]} results array with result of each testcase. Zero means success, one means error 
+ * @param {string[]} tests all tests (folder names) found
+ * @returns {string[]} tests (folder names) that should be executed
  */
-function printFinished(results) {
-    const failedTests = results.reduce((acc, val) => acc+val, 0)
-    if (failedTests) {
-        console.log(`Number of failed tests: ${failedTests}/${results.length}\n`)
-    } else {
-        console.log(`All tests have been performed. No error!\n`)
+function getUserSettings(tests) {
+    let filtered = tests    
+    switch (process.argv[2]) {
+        case `--skip`:
+        case `-s`:
+            const skipped = process.argv.slice(3)
+            filtered = tests.filter(el => !skipped.includes(el))
+            break;
+        case `--run`:
+        case `-r`:
+            const run = process.argv.slice(3)
+            filtered = tests.filter(el => run.includes(el))
+            break
+        default:
+            break;
     }
+
+    return filtered
 }
 
 /**
@@ -62,110 +75,18 @@ function runTest(test) {
 
     return new Promise(resolve => {
         child_process.exec(command, { timeout: TIMEOUT }, (err, stdout, stderr) => {
-            const expectedErrorCode = getErrorCode(opt)
-            if (err && err.code != expectedErrorCode) {
-                console.error(`exec error: ${err}`)
-                resolve(ERROR)
-                return
-            }
-
-            const result = getResult(opt, { stdout, stderr })
+            const result = getResult(opt, { stdout, stderr, err })
             resolve(printResult(result, {command, test}))
         })
     })
 }
 
 /**
- * Prints result of the test case.
- * 
- * @param {TestResult} result information about the result of the test 
- * @param {TestInfo} info information about the test case
- * @returns {number} SUCCESS if test executed successfully, otherwise ERROR 
- */
-function printResult(result, info) {
-    if (result.correct) {
-        printSuccess(info)
-        return SUCCESS
-    } else {
-        info = Object.assign({errorMessage : result.errorMessage}, info)
-        printError(info)
-        return ERROR
-    }
-}
-/**
  * @typedef {Object} Opt Object that contains information about current test folder
  * @property {string[]} files filenames found in the current test folder
  * @property {string} folderPath path to the current test folder
  * @property {array} [args] filenames to be checked in the current test folder 
  */
-
-/**
- * Returns error code foudn in **return_code** folder or 0.
- * 
- * @param {Opt} opt default Opt object without args
- * @returns {number} error code, defaults to 0
- */
-function getErrorCode(opt) {
-    opt = Object.assign({args: [`return_code`, `return_code.txt`]}, opt)
-    return Number(getArgContent(opt))
-}
-
-/**
- * @typedef {Object} TestResult Object that contains information about the result of the current test
- * @property {boolean} correct true if the test was successful, otherwise false
- * @property {string} [errorMessage] message to be printed in case of an error  
- */
-
-/**
- * Checks if stdout and stderr of executed program is same as expected stdout and stderr
- * 
- * @param {Opt} opt default Opt object without args
- * @param {string} results.stdout actual stdout of the program
- * @param {string} results.stderr actual stderr of the program
- * @returns {TestResult} object describing result of the test
- */
-function getResult(opt, results) {
-    const stdoutOpt = Object.assign({ args: [`stdout`, `stdout.txt`] }, opt)
-    let stdoutCorrect = isStdCorrect(stdoutOpt, results.stdout)
-
-    const stderrOpt = Object.assign({ args: [`stderr`, `stderr.txt`] }, opt)
-    let stderrCorrect = isStdCorrect(stderrOpt, results.stderr)
-
-    let result = {
-        correct: (stdoutCorrect.correct && stderrCorrect.correct),
-        errorMessage: ``
-    }
-
-    if (!stdoutCorrect.correct) {
-        result.errorMessage += `There was an error with stdout:\n${stdoutCorrect.errorMessage}`
-    }
-
-    if (!stderrCorrect.correct) {
-        result.errorMessage += `There was an error with stderr:\n${stderrCorrect.errorMessage}`
-    }
-
-    return result
-}
-
-/**
- * Checks if content of standard stream is equal to expected
- * 
- * @param {Opt} opt Opt object with args defined
- * @param {string} resultStd actual result of standard stream
- * @returns {{correct: boolean, errorMessage: string}} object describing result of the test stream
- */
-function isStdCorrect(opt, resultStd) {
-    const expectedStd = getArgContent(opt)
-    let correct = (!resultStd && !expectedStd)
-    correct = correct || (resultStd === expectedStd)
-
-    let errorMessage = ""
-    if (!correct) {
-        errorMessage = `Output:\n${resultStd}\nExpected:\n${expectedStd}\n`
-    }
-
-    return { correct, errorMessage }
-}
 
 /**
  * Returns path and filenames of currently tested test case (folder)
@@ -212,24 +133,6 @@ function createCommand(opt) {
 }
 
 /**
- * Loads executable from **.testrunner.json** file. Defaults to proj1.exe.
- * 
- * @returns {string} executable 
- */
-function loadExecutable() {
-    let executable;
-    try {
-        const settings = JSON.parse(fs.readFileSync(TESTRUNNER_SETTINGS))
-        executable = settings.executable
-    } catch(e) {
-        executable = `proj1.exe`
-        console.warn(`Missing .testrunner.json in root folder, using default executable ${executable}`)
-    }
-
-    return executable
-}
-
-/**
  * Loads content of the file specified in opt.args that exists in test folder.
  * If multiple files exist, returns content of the last one.
  * 
@@ -273,6 +176,118 @@ function getStdinPath(opt) {
 }
 
 /**
+ * Loads executable from **.testrunner.json** file. Defaults to proj1.exe.
+ * 
+ * @returns {string} executable 
+ */
+function loadExecutable() {
+    let executable;
+    try {
+        const settings = JSON.parse(fs.readFileSync(TESTRUNNER_SETTINGS))
+        executable = settings.executable
+    } catch(e) {
+        executable = `proj1.exe`
+        console.warn(`Missing .testrunner.json in root folder, using default executable ${executable}`)
+    }
+
+    return executable
+}
+
+/**
+ * @typedef {Object} TestResult Object that contains information about the result of the current test
+ * @property {boolean} correct true if the test was successful, otherwise false
+ * @property {string} [errorMessage] message to be printed in case of an error  
+ */
+
+/**
+ * Checks if stdout and stderr of executed program is same as expected stdout and stderr
+ * 
+ * @param {Opt} opt default Opt object without args
+ * @param {string} results.stdout actual stdout of the program
+ * @param {string} results.stderr actual stderr of the program
+ * @param {Object} results.err error object from fs.exec function
+ * @returns {TestResult} object describing result of the test
+ */
+function getResult(opt, results) {
+    const expectedErrorCode = getErrorCode(opt)
+    const errCodeCorrect = !(err && err.code != expectedErrorCode)
+
+    const stdoutOpt = Object.assign({ args: [`stdout`, `stdout.txt`] }, opt)
+    const stdoutCorrect = isStdCorrect(stdoutOpt, results.stdout)
+
+    const stderrOpt = Object.assign({ args: [`stderr`, `stderr.txt`] }, opt)
+    const stderrCorrect = isStdCorrect(stderrOpt, results.stderr)
+
+    let result = {
+        correct: (errCodeCorrect && stdoutCorrect.correct && stderrCorrect.correct),
+        errorMessage: ``
+    }
+
+    if(!errCodeCorrect) {
+        result.errorMessage += `There was an error with errorCode:\nOutput:${err.code}\nExpected:${expectedErrorCode}\n${err.message}`
+    }
+
+    if (!stdoutCorrect.correct) {
+        result.errorMessage += `There was an error with stdout:\n${stdoutCorrect.errorMessage}`
+    }
+
+    if (!stderrCorrect.correct) {
+        result.errorMessage += `There was an error with stderr:\n${stderrCorrect.errorMessage}`
+    }
+
+    return result
+}
+
+/**
+ * Returns error code foudn in **return_code** folder or 0.
+ * 
+ * @param {Opt} opt default Opt object without args
+ * @returns {number} error code, defaults to 0
+ */
+function getErrorCode(opt) {
+    opt = Object.assign({args: [`return_code`, `return_code.txt`]}, opt)
+    return Number(getArgContent(opt))
+}
+
+/**
+ * Checks if content of standard stream is equal to expected
+ * 
+ * @param {Opt} opt Opt object with args defined
+ * @param {string} resultStd actual result of standard stream
+ * @returns {{correct: boolean, errorMessage: string}} object describing result of the test stream
+ */
+function isStdCorrect(opt, resultStd) {
+    const expectedStd = getArgContent(opt)
+    let correct = (!resultStd && !expectedStd)
+    correct = correct || (resultStd === expectedStd)
+
+    let errorMessage = ""
+    if (!correct) {
+        errorMessage = `Output:\n${resultStd}\nExpected:\n${expectedStd}\n`
+    }
+
+    return { correct, errorMessage }
+}
+
+/**
+ * Prints result of the test case.
+ * 
+ * @param {TestResult} result information about the result of the test 
+ * @param {TestInfo} info information about the test case
+ * @returns {number} SUCCESS if test executed successfully, otherwise ERROR 
+ */
+function printResult(result, info) {
+    if (result.correct) {
+        printSuccess(info)
+        return SUCCESS
+    } else {
+        info = Object.assign({errorMessage : result.errorMessage}, info)
+        printError(info)
+        return ERROR
+    }
+}
+
+/**
  * @typedef {Object} TestInfo Object that contains information about the current test
  * @property {string} test name of the test case
  * @property {string} command command that was executed
@@ -299,27 +314,14 @@ function printError(opt) {
 }
 
 /**
- * Filters out test cases (folder names) that should not be executed.
  * 
- * @param {string[]} tests all tests (folder names) found
- * @returns {string[]} tests (folder names) that should be executed
+ * @param {number[]} results array with result of each testcase. Zero means success, one means error 
  */
-function getUserSettings(tests) {
-    let filtered = tests    
-    switch (process.argv[2]) {
-        case `--skip`:
-        case `-s`:
-            const skipped = process.argv.slice(3)
-            filtered = tests.filter(el => !skipped.includes(el))
-            break;
-        case `--run`:
-        case `-r`:
-            const run = process.argv.slice(3)
-            filtered = tests.filter(el => run.includes(el))
-            break
-        default:
-            break;
+function printFinished(results) {
+    const failedTests = results.reduce((acc, val) => acc+val, 0)
+    if (failedTests) {
+        console.log(`Number of failed tests: ${failedTests}/${results.length}\n`)
+    } else {
+        console.log(`All tests have been performed. No error!\n`)
     }
-
-    return filtered
 }
