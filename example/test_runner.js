@@ -210,7 +210,7 @@ function loadExecutable() {
  */
 function getResult(opt, results) {
     const expectedErrorCode = getErrorCode(opt)
-    const errCodeCorrect = !(err && err.code != expectedErrorCode)
+    const errCodeCorrect = !(results.err && results.err.code != expectedErrorCode)
 
     const stdoutOpt = Object.assign({ args: [`stdout`, `stdout.txt`] }, opt)
     const stdoutCorrect = isStdCorrect(stdoutOpt, results.stdout)
@@ -224,7 +224,7 @@ function getResult(opt, results) {
     }
 
     if(!errCodeCorrect) {
-        result.errorMessage += `There was an error with errorCode:\nOutput:${err.code}\nExpected:${expectedErrorCode}\n${err.message}`
+        result.errorMessage += `There was an error with errorCode:\nOutput:${err.code}\nExpected:${expectedErrorCode}\n${results.err.message}`
     }
 
     if (!stdoutCorrect.correct) {
