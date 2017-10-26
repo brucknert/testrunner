@@ -224,7 +224,7 @@ function getResult(opt, results) {
     }
 
     if(!errCodeCorrect) {
-        result.errorMessage += `There was an error with errorCode:\nOutput:${err.code}\nExpected:${expectedErrorCode}\n${results.err.message}`
+        result.errorMessage += `There was an error with errorCode:\nOutput:${results.err.code}\nExpected:${expectedErrorCode}\n${results.err.message}`
     }
 
     if (!stdoutCorrect.correct) {
