@@ -56,12 +56,17 @@ This chapter describes mandatory folder structure.
 
 ### 4.1 Root folder
 ```
-.   -- tests    -- 01
-                -- 02
-                -- 03 (you can add as many folders in tests folder as you want)
-    -- proj1.exe (or your binary/script)
-    -- test_runner.js
-    -- .testrunner.json
+./
+├── tests/
+│   ├── 01/
+│   ├── 02/
+│   ├── 03/
+│   └── 04failed/
+├── lib/
+│   └── diff.js
+├── proj1.exe (or your binary/script)
+├── test_runner.js
+└── .testrunner.json
 ```
 
 ### 4.2 TestRunner settings
@@ -101,11 +106,12 @@ You can list them using
 Each test case folder can contain these files (example test case folder 01):
 
 ```
-01  -- argv.txt
-    -- stdin.txt
-    -- stdout.txt
-    -- stderr.txt
-    -- return_code.txt
+01/
+├── argv.txt
+├── stdin.txt
+├── stdout.txt
+├── stderr.txt
+└── return_code.txt
 ```
 
 Every file is optional in test case folder. So if you don't want to use program arguments (argv) you don't have to. Same with stdin. If the test should not print anything to the stderr stream, you don't have to have stderr.txt etc.
@@ -187,12 +193,15 @@ Output:
 <output>
 Expected:
 <expected>
+Diff:
+<diff>
 ```
 
 where
 * \<errormessage\> is description what went wrong (stdout, stderr or errorcode)
 * \<output\> value that the program returned
 * \<expected\> value that was expected
+* \<diff\> GNU diff format output
 
 ## 8 Example
 Copy **example** folder from github and run *make* command in terminal in the folder with *Makefile* file.
@@ -208,6 +217,7 @@ And see the results of the test cases. There are 3 test cases:
 * 01 - uses one program argument and checks if the program prints the argument to the stdout
 * 02 - uses two program arguments and checks if the program returned an error code 1 and prints error tothe stderr
 * 03 - uses stdin and checks if the program prints first letter of the stdin to the stdout
+* 04failed - this use case should fail
 
 It should output:
 
@@ -216,9 +226,47 @@ $ node test_runner.js
 01: proj1.exe arg1: Success! :)
 02: proj1.exe arg1 arg2: Success! :)
 03: proj1.exe < tests\03\stdin.txt: Success! :)
-All tests have been performed. No error!
+04failed: proj1.exe izpjenejlepsi: Failed! :(
+There was an error with stdout:
+Output:
+izpjenejlepsi
+
+Expected:
+izpneninejlepsi
+
+Diff:
+@@ -1,9 +1,11 @@
+ izp
+-je
++neni
+ nejl
+
+
+All tests have been performed.
+Number of failed tests: 1/4
 ````
 
 You can check the proj1 source code in **proj1.c** file.
 
 Have fun testing and programming!
+
+## 9 Changelog
+How to check what version of TestRunner are you using? Execute in terminal:
+
+`node test_runner.js --version`
+
+or 
+
+`node test_runner.js -v`
+
+This will output version of the script (added in version 1.0.1).
+
+### 1.0.1 (28/10/2017)
+* Add support for --version (-v) argument
+* Add diff section into Failed test output
+* Test cases should now be sorted by name
+* Failed test font colour is now read (instead of white font and red background colour)
+* Add use case that fails
+
+### 1.0.0 (26/10/2017)
+Initial release

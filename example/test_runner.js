@@ -1,7 +1,9 @@
 const fs = require(`fs`)
 const path = require(`path`)
 const child_process = require(`child_process`)
+const diff = new (require(`./lib/diff.js`).diff_match_patch)
 
+const VERSION = `1.0.1`
 const TIMEOUT = 30*1000
 const TESTRUNNER_SETTINGS = `.testrunner.json`
 const SUCCESS = 0
@@ -13,13 +15,16 @@ main()
  * Starting point of the script.
  */
 function main() {
-    if(process.argv[2] === "-h" || process.argv[2] === "-help"){
+    const arg = process.argv[2] 
+    if(arg === `-h` || arg === `-help`){
         printHelp()
+        return
+    } else if (arg === `-v` || arg == `--version`) {
+        printVersion()
         return
     }
 
-    let tests = fs.readdirSync(`tests`)
-    tests = getUserSettings(tests)
+    let tests = getTests()
     let promises = []
     tests.forEach(test => promises.push(runTest(test)))
 
@@ -28,38 +33,38 @@ function main() {
             .catch(e => console.error(`Unexpected error in promise all`, e))
 }
 
-/**
- * Prints help.
- */
 function printHelp() {
     const help = `Welcome to the testrunner!`
     console.log(help)
 }
 
+function printVersion() {
+    console.log(`TestRunner version: ${VERSION}`)
+}
+
 /**
- * Filters out test cases (folder names) that should not be executed.
+ * Returns test cases (folder names) that should be executed.
  * 
- * @param {string[]} tests all tests (folder names) found
  * @returns {string[]} tests (folder names) that should be executed
  */
-function getUserSettings(tests) {
-    let filtered = tests    
+function getTests() {
+    let tests = fs.readdirSync(`tests`).sort()
     switch (process.argv[2]) {
         case `--skip`:
         case `-s`:
             const skipped = process.argv.slice(3)
-            filtered = tests.filter(el => !skipped.includes(el))
+            tests = tests.filter(el => !skipped.includes(el))
             break;
         case `--run`:
         case `-r`:
             const run = process.argv.slice(3)
-            filtered = tests.filter(el => run.includes(el))
+            tests = tests.filter(el => run.includes(el))
             break
         default:
             break;
     }
 
-    return filtered
+    return tests
 }
 
 /**
@@ -76,7 +81,7 @@ function runTest(test) {
     return new Promise(resolve => {
         child_process.exec(command, { timeout: TIMEOUT }, (err, stdout, stderr) => {
             const result = getResult(opt, { stdout, stderr, err })
-            resolve(printResult(result, {command, test}))
+            resolve({result, command, test})
         })
     })
 }
@@ -258,12 +263,12 @@ function getErrorCode(opt) {
  */
 function isStdCorrect(opt, resultStd) {
     const expectedStd = getArgContent(opt)
-    let correct = (!resultStd && !expectedStd)
-    correct = correct || (resultStd === expectedStd)
+    const stdDiff = diff.patch_toText(diff.patch_make(resultStd, expectedStd))
+    let correct = !Boolean(stdDiff)
 
     let errorMessage = ""
     if (!correct) {
-        errorMessage = `Output:\n${resultStd}\nExpected:\n${expectedStd}\n`
+        errorMessage = `Output:\n${resultStd}\nExpected:\n${expectedStd}\nDiff:\n${stdDiff}\n`
     }
 
     return { correct, errorMessage }
@@ -309,7 +314,7 @@ function printSuccess(opt) {
  * @param {TestInfo} opt
  */
 function printError(opt) {
-    console.log(`\x1b[41m%s\x1b[0m`, `${opt.test}: ${opt.command}: Failed! :(`)
+    console.log(`\x1b[31m%s\x1b[0m`, `${opt.test}: ${opt.command}: Failed! :(`)
     console.log(`${opt.errorMessage}`)
 }
 
@@ -318,10 +323,22 @@ function printError(opt) {
  * @param {number[]} results array with result of each testcase. Zero means success, one means error 
  */
 function printFinished(results) {
-    const failedTests = results.reduce((acc, val) => acc+val, 0)
+    let failedTests = 0
+    results.forEach(r => {
+        let result = r.result
+        let type = {
+            command: r.command,
+            test: r.test
+        }
+
+        if(printResult(result, type) === ERROR) {
+            failedTests++
+        }
+    })
+    console.log(`All tests have been performed.`)
     if (failedTests) {
-        console.log(`Number of failed tests: ${failedTests}/${results.length}\n`)
+        console.log(`Number of failed tests: ${failedTests}/${results.length}`)
     } else {
-        console.log(`All tests have been performed. No error!\n`)
+        console.log(`No error!`)
     }
 }
